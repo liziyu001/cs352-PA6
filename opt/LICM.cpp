@@ -40,6 +40,7 @@ bool LICM::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM)
 	// Grab the dominator tree
 	mDomTree = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
 	
+	hoistPreOrder(mDomTree->getNode(mCurrLoop->getHeader()));
 	return mChanged;
 }
 
@@ -71,6 +72,31 @@ bool LICM::isSafeToHoistInstr(llvm::Instruction* instr) {
 	}
 
 	return true;
+}
+
+void LICM::hoistInstr(llvm::Instruction* instr) {
+	BasicBlock* preheader = mCurrLoop->getLoopPreheader();
+	instr->moveBefore(preheader->getTerminator());
+	mChanged = true;
+}
+
+void LICM::hoistPreOrder(llvm::DomTreeNode* domNode) {
+	BasicBlock* block = domNode->getBlock();
+	if (mLoopInfo->getLoopFor(block) == mCurrLoop) {
+		auto iter = block->begin();
+		while (iter != block->end()) {
+			Instruction* currInstr = &*iter;
+			++iter;
+			if (isSafeToHoistInstr(currInstr)) {
+				hoistInstr(currInstr);
+			}
+		}
+
+		for (auto child : *domNode) {
+			hoistPreOrder(child);
+		}
+	}
+	
 }
 
 } // opt
