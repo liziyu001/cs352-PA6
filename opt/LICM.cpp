@@ -33,6 +33,12 @@ bool LICM::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM)
 	mChanged = false;
 	
 	// PA6: Implement
+	// Save the current loop 
+	mCurrLoop = L;
+	// Grab the loop info
+	mLoopInfo = &getAnalysis<LoopInfo>();
+	// Grab the dominator tree
+	mDomTree = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
 	
 	return mChanged;
 }
@@ -40,8 +46,33 @@ bool LICM::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM)
 void LICM::getAnalysisUsage(AnalysisUsage &Info) const
 {
 	// PA6: Implement
+	// LICM does not modify the CFG 
+	Info.setPreservesCFG();
+	// Execute after dead blocks have been removed 
+	Info.addRequired<DeadBlocks>();
+	// Use the built-in Dominator tree and loop info passes 
+	Info.addRequired<DominatorTreeWrapperPass>(); 
+	Info.addRequired<LoopInfo>();
 }
 	
+bool LICM::isSafeToHoistInstr(llvm::Instruction* instr) {
+	if (!mCurrLoop->hasLoopInvariantOperands(instr)) {
+		return false;
+	}
+
+	if (!isSafeToSpeculativelyExecute(instr)) {
+		return false;
+	}
+
+	if (!(isa<BinaryOperator>(instr) || isa<CastInst>(instr) 
+		|| isa<SelectInst>(instr) || isa<GetElementPtrInst>(instr)
+		|| isa<CmpInst>(instr))) {
+		return false;
+	}
+
+	return true;
+}
+
 } // opt
 } // uscc
 
