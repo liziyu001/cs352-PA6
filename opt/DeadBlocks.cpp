@@ -33,6 +33,31 @@ bool DeadBlocks::runOnFunction(Function& F)
 	bool changed = false;
 	
 	// PA6: Implement
+	std::set<BasicBlock*> visitedSet;
+	for (auto blockIter = df_begin(&F.getEntryBlock()), blockEnd = df_end(&F.getEntryBlock());
+		 blockIter != blockEnd;
+		 ++blockIter)
+	{
+		visitedSet.insert(*blockIter);
+	}
+
+	std::set<BasicBlock*> unreachableSet;
+	for (Function::iterator blockIter = F.begin(); blockIter != F.end(); ++blockIter) {
+		if (visitedSet.find(&*blockIter) == visitedSet.end()) {
+			unreachableSet.insert(&*blockIter);
+		}
+	}
+
+	if (unreachableSet.size() > 0) {
+		changed = true;
+		for (auto block : unreachableSet) {
+			for (auto iter = succ_begin(block); iter != succ_end(block); iter++) {
+				(*iter)->removePredecessor(block);
+			}
+			block->eraseFromParent();
+		}
+	}
+	
 	
 	return changed;
 }
@@ -40,6 +65,7 @@ bool DeadBlocks::runOnFunction(Function& F)
 void DeadBlocks::getAnalysisUsage(AnalysisUsage& Info) const
 {
 	// PA6: Implement
+	Info.addRequired<ConstantBranch>();
 }
 
 } // opt
