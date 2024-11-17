@@ -1,0 +1,46 @@
+; ModuleID = 'main'
+
+@.str = private unnamed_addr constant [4 x i8] c"%d\0A\00"
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+entry:
+  br label %while.cond
+
+while.cond:                                       ; preds = %if.end, %entry
+  %Phi = phi i32 [ %add, %if.end ], [ 0, %entry ]
+  %Phi7 = phi i32 [ %Phi8, %if.end ], [ undef, %entry ]
+  %lt = icmp slt i32 %Phi, 3
+  br i1 %lt, label %while.body, label %while.end
+
+while.body:                                       ; preds = %while.cond
+  %eq = icmp eq i32 %Phi, 1
+  br i1 %eq, label %if.then, label %if.else
+
+while.end:                                        ; preds = %while.cond
+  %0 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([4 x i8]* @.str, i32 0, i32 0), i32 %Phi7)
+  ret i32 0
+
+if.then:                                          ; preds = %while.body
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %if.end3
+  %Phi8 = phi i32 [ 10, %if.then ], [ %Phi9, %if.end3 ]
+  %add = add i32 %Phi, 1
+  br label %while.cond
+
+if.else:                                          ; preds = %while.body
+  %eq1 = icmp eq i32 %Phi, 0
+  br i1 %eq1, label %if.then2, label %if.else4
+
+if.then2:                                         ; preds = %if.else
+  br label %if.end3
+
+if.end3:                                          ; preds = %if.then2, %if.else4
+  %Phi9 = phi i32 [ 20, %if.then2 ], [ 30, %if.else4 ]
+  br label %if.end
+
+if.else4:                                         ; preds = %if.else
+  br label %if.end3
+}
