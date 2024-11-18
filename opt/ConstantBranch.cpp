@@ -54,13 +54,18 @@ bool ConstantBranch::runOnFunction(Function& F)
 		for (std::set<Instruction*>::iterator i = removeSet.begin(); i != removeSet.end(); ++i) {
 			BranchInst* branch = cast<BranchInst>(*i);
 			ConstantInt* cond = cast<ConstantInt>(branch->getCondition());
+			BasicBlock* target;
+			BasicBlock* eliminated;
 			if (cond->isZero()) {
-				BasicBlock* target = branch->getSuccessor(1);
-				BranchInst::Create(target, branch);
+				target = branch->getSuccessor(1);
+				eliminated = branch->getSuccessor(0);
 			} else {
-				BasicBlock* target = branch->getSuccessor(0);
-				BranchInst::Create(target, branch);
+				target = branch->getSuccessor(0);
+				eliminated = branch->getSuccessor(1);
 			}
+			BranchInst::Create(target, branch);
+			eliminated->removePredecessor(branch->getParent());
+			
 			(*i)->eraseFromParent();
 		}
 	}
